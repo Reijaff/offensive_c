@@ -1,11 +1,7 @@
 #include<windows.h>
 
 int main(int argc, char *argv[]) {
-	HANDLE processHandle;
-	PVOID remoteBuffer;
-	char DllPath[] = "mylib.dll";
-
-    BOOL wp = 0;
+	char DllPath[] = "mylib_mainexec.dll";
 
     PROCESS_INFORMATION pi;
     STARTUPINFOA Startup;

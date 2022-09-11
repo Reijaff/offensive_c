@@ -3,7 +3,7 @@
 
 
 int main(int argc, char* argv[]) {
-    LoadLibrary("Z:\\git\\offensive_c\\bin\\mylib.dll"); // or "mylib.dll"
+    LoadLibraryW(L"mylib_mainexec.dll");
     printf("hello");
 	return 0;
 }

