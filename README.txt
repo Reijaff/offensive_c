@@ -3,6 +3,9 @@ learn
 adapt
 repeat
 
+TODO:
+- https://github.com/janoglezcampos/c_syscalls
+
 // truncated structure
 // get full structure on
 // 1. https://www.vergiliusproject.com/

@@ -282,15 +282,6 @@ SIZE_T CharStringToWCharString(PWCHAR Destination, PCHAR Source, SIZE_T MaximumA
     return MaximumAllowed - Length;
 }
 
-void *memcpy(void *dest, const void *src, size_t len)
-{
-    char *d = dest;
-    const char *s = src;
-    while (len--)
-        *d++ = *s++;
-    return dest;
-}
-
 BOOL RtlLoadPeHeaders(PIMAGE_DOS_HEADER *Dos, PIMAGE_NT_HEADERS *Nt, PIMAGE_FILE_HEADER *File, PIMAGE_OPTIONAL_HEADER *Optional, PBYTE *ImageBase)
 {
     *Dos = (PIMAGE_DOS_HEADER)*ImageBase;

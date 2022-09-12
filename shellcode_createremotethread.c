@@ -39,8 +39,6 @@ unsigned char buf[] =
 
 int main()
 {
-    BOOL wp = 0;
-
     PROCESS_INFORMATION pi;
     STARTUPINFOA Startup;
     ZeroMemory(&Startup, sizeof(Startup));
