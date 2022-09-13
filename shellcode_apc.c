@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
   ZeroMemory(&pi, sizeof(pi));
 
   CreateProcessA("Z:\\git\\offensive_c\\bin\\sleep_alertable.exe", NULL, NULL, NULL, 0, NORMAL_PRIORITY_CLASS, NULL, NULL, &Startup, &pi);
+  WaitForSingleObject(pi.hProcess, 1 * 1000);
   //
 
   HANDLE ph = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pi.dwProcessId);
