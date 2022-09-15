@@ -5,7 +5,12 @@ repeat
 
 TODO:
 - https://github.com/janoglezcampos/c_syscalls
+- https://github.com/TheKevinWang/UACHooker
 
+- offensive_c linux:
+    - https://github.com/bediger4000/userlandexec
+    - https://github.com/samuraictf/gatekeeper
+    
 // truncated structure
 // get full structure on
 // 1. https://www.vergiliusproject.com/

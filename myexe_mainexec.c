@@ -1,6 +1,9 @@
 #include <windows.h>
 
-int main()
+int WINAPI WinMain(HINSTANCE hThisInstance,
+                   HINSTANCE hPrevInstance,
+                   LPSTR lpszArgument,
+                   int nCmdShow)
 {
     MessageBox(
         NULL,
