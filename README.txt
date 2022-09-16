@@ -16,6 +16,7 @@ TODO:
 // 1. https://www.vergiliusproject.com/
 // 2. https://github.com/x64dbg/x64dbg/blob/development/src/dbg/ntdll/ntdll.h
 // 3. http://undocumented.ntinternals.net/
+// 4. https://github.com/processhacker/phnt
 // typedef struct _ND_PEB
 // {
 // BYTE Reserved1[2];
