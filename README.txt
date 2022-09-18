@@ -6,6 +6,7 @@ repeat
 TODO:
 - https://github.com/janoglezcampos/c_syscalls
 - https://github.com/TheKevinWang/UACHooker
+- https://github.com/ch3rn0byl/AngryWindows
 
 - offensive_c linux:
     - https://github.com/bediger4000/userlandexec
