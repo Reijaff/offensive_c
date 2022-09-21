@@ -7,10 +7,17 @@ TODO:
 - https://github.com/janoglezcampos/c_syscalls
 - https://github.com/TheKevinWang/UACHooker
 - https://github.com/ch3rn0byl/AngryWindows
+- https://github.com/SolomonSklash/UnhookingPOC
+- https://github.com/trickster0/TartarusGate/
+- https://github.com/suspex0/ProxyJect
 
 - offensive_c linux:
     - https://github.com/bediger4000/userlandexec
     - https://github.com/samuraictf/gatekeeper
+    - https://github.com/gaffe23/linux-inject
+
+//
+compile with "-Wl,--exclude-all-symbols" to disable automatic function export in dll, mingw
     
 // truncated structure
 // get full structure on
