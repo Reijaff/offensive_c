@@ -120,7 +120,6 @@ int main()
 		DWORD64 NumberOfEntries = (lpImageBaseRelocation->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(BASE_RELOCATION_ENTRY);
 		for (DWORD64 i = 0; i < NumberOfEntries; i++)
 		{
-			printf("section %d\n", i);
 			PBASE_RELOCATION_ENTRY lpImageRelocationEntry = (PBASE_RELOCATION_ENTRY)((DWORD64)hFileContent + sourceImageRelocSection->PointerToRawData + RelocOffset);
 			RelocOffset += sizeof(BASE_RELOCATION_ENTRY);
 
