@@ -2,6 +2,9 @@
 
 
 int main(int argc, char* argv[]) {
-    LoadLibraryW(L"mylib_mainexec.dll");
+    LoadLibraryW(L"dll_morph_module.dll");
+    while(1){
+        Sleep(10000);
+    }
 	return 0;
 }

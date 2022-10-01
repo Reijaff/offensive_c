@@ -11,6 +11,7 @@ TODO:
 - https://github.com/trickster0/TartarusGate/
 - https://github.com/suspex0/ProxyJect
 - https://github.com/TheCruZ/Simple-Manual-Map-Injector -- manualmap + cleanup
+- https://github.com/ethicalblue/Self-Erasing-Code-Example/blob/main/self-erase.asm
 
 - offensive_c linux:
     - https://github.com/bediger4000/userlandexec
