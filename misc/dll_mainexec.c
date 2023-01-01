@@ -1,14 +1,14 @@
 #include <windows.h>
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD nReason, LPVOID lpReserved)
+BOOL WINAPI DllMain(HMODULE hModule, DWORD nReason, LPVOID lpReserved)
 {
     switch (nReason)
     {
     case DLL_PROCESS_ATTACH:
         MessageBox(
             NULL,
-            "owned!",
-            "owned!",
+            "0wn3d!",
+            "0wn3d!",
             MB_OK);
         break;
     case DLL_PROCESS_DETACH:

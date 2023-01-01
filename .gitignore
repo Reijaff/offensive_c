@@ -1,4 +1,6 @@
 bin/*
+hs/
+.vscode
 # Prerequisites
 *.d
 

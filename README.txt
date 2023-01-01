@@ -3,6 +3,9 @@ learn
 adapt
 repeat
 
+compile with ( https://github.com/mstorsjo/llvm-mingw clang-15) : 
+$ x86_64-w64-mingw32-clang -Os ...
+
 TODO:
 - https://github.com/janoglezcampos/c_syscalls
 - https://github.com/TheKevinWang/UACHooker
@@ -20,6 +23,11 @@ TODO:
 
 //
 compile with "-Wl,--exclude-all-symbols" to disable automatic function export in dll, mingw
+
+pe file analysis + parsing
+ - https://learn.microsoft.com/en-us/windows/win32/debug/pe-format
+ - mingw c autocomplete standart libs in vscode
+ - vx-api
     
 // truncated structure
 // get full structure on

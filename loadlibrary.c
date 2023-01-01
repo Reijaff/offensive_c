@@ -2,7 +2,7 @@
 
 
 int main(int argc, char* argv[]) {
-    LoadLibraryW(L"dll_morph_module.dll");
+    LoadLibraryA("Z:\\git\\offensive_c\\bin\\dll_mainexec.dll");
     while(1){
         Sleep(10000);
     }

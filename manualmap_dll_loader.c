@@ -15,6 +15,7 @@ typedef BOOL(WINAPI *DLLEntry)(HINSTANCE dll, DWORD reason, LPVOID reserved);
 
 int main()
 {
+	// TODO: load into child process, not in itself
     // // setup
 
     PROCESS_INFORMATION pi;
